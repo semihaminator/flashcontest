@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Salsa Flash · Admin</title>
+  <link rel="icon" href="/img/favicon.webp" type="image/webp">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body { background: radial-gradient(80% 50% at 50% 0%, #3a0820, var(--bg) 70%) fixed; }
+    .wrap { width: min(1100px, 100% - 32px); margin: 0 auto; padding: 28px 0 120px; }
+    .top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+    .top img { width: 150px; }
+    .top h1 { font: 900 22px/1 var(--display); flex: 1; }
+    .top a { font-weight: 700; color: var(--pink-soft); }
+    .card { background: rgba(36, 5, 20, .8); border: 1px solid var(--line); border-radius: 20px; padding: 18px; margin-bottom: 14px; }
+    input, textarea, select {
+      font: 600 14px var(--body); color: var(--chrome); background: rgba(0, 0, 0, .3); border: 1px solid var(--line);
+      border-radius: 10px; padding: 10px 12px; outline: none; width: 100%; min-width: 0;
+    }
+    input:focus, textarea:focus { border-color: var(--pink-2); box-shadow: 0 0 0 3px rgba(255, 31, 142, .2); }
+    textarea { min-height: 110px; font-family: ui-monospace, monospace; font-size: 13px; resize: vertical; }
+    button { font: 800 13px/1 var(--body); cursor: pointer; border-radius: 999px; padding: 11px 16px; border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--chrome); }
+    button:hover { border-color: var(--pink-soft); }
+    button.hot { background: linear-gradient(180deg, #ff6ab8, var(--pink) 55%, #c4006a); border: 0; color: #fff; box-shadow: 0 6px 22px rgba(255, 31, 142, .45); }
+    button.danger { color: #ff9cb0; }
+    button:disabled { opacity: .5; cursor: default; }
+    .login { max-width: 380px; margin: 14vh auto 0; text-align: center; }
+    .login img { width: 260px; margin: 0 auto 10px; }
+    .login form { display: grid; gap: 10px; }
+    .err { color: #ff9cb0; font-weight: 700; min-height: 1.4em; margin: 6px 0 0; }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .toolbar .grow { flex: 1; min-width: 200px; }
+    .agency-head { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+    label { display: grid; gap: 4px; font: 700 11px/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .stats { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 10px; }
+    .stat { font: 700 13px/1 var(--body); padding: 8px 12px; border-radius: 999px; background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .1); }
+    .stat.ok { color: var(--ok); border-color: rgba(125, 255, 182, .35); background: rgba(125, 255, 182, .08); }
+    .stat.q { background: var(--pink); color: #fff; border: 0; }
+    details > summary { cursor: pointer; font-weight: 700; color: var(--pink-soft); margin: 4px 0; }
+    .streamers { display: grid; grid-template-columns: 1fr 160px 36px; gap: 6px; margin-top: 10px; align-items: center; }
+    .streamers .h { font: 700 11px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .streamers input.hit { border-color: rgba(125, 255, 182, .45); }
+    .x { padding: 0; width: 32px; height: 32px; }
+    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .savebar {
+      position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 30; display: flex; gap: 12px; align-items: center;
+      background: rgba(26, 4, 16, .92); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 999px; padding: 8px 8px 8px 18px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, .5); font-weight: 700; font-size: 14px; white-space: nowrap;
+    }
+    .dirty { color: var(--pink-soft); }
+    .muted { color: var(--muted); font-size: 13px; }
+    .warn { border-color: #ff9cb0; color: #ffd0da; }
+    .hidden-tag { font-size: 11px; color: var(--muted); }
+    @media (max-width: 640px) {
+      .agency-head { grid-template-columns: 1fr 1fr; }
+      .agency-head > :last-child { grid-column: 1 / -1; }
+      .streamers { grid-template-columns: 1fr 110px 34px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="app"></div>
+  <script>
+(() => {
+  const app = document.getElementById('app');
+  const R = { minStreamers: 10, minTotal: 500000, minActive: 6, activeThreshold: 9750 };
+  let pw = ''; try { pw = sessionStorage.getItem('pw') || ''; } catch {}
+  let data = null, dirty = false, saving = false, filter = '', open = new Set(), dbWarn = false;
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (n) => Number(n).toLocaleString('ru-RU');
+  const toInt = (v) => { const n = Math.round(Number(String(v).replace(/[\s,]/g, ''))); return Number.isFinite(n) && n > 0 ? n : 0; };
+
+  async function api(method, body) {
+    const r = await fetch('/api/admin', { method, headers: { 'x-admin-password': pw, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j.error || r.status), { status: r.status });
+    return j;
+  }
+
+  function loginView(msg = '') {
+    app.innerHTML = `<div class="login card"><img src="/img/logo.webp" alt="Salsa Flash">
+      <form id="lf"><input type="password" id="pw" placeholder="Admin password" autocomplete="current-password" autofocus>
+      <button class="hot">Sign in</button></form><p class="err">${esc(msg)}</p></div>`;
+    document.getElementById('lf').onsubmit = async (e) => {
+      e.preventDefault(); pw = document.getElementById('pw').value; await boot();
+    };
+  }
+
+  async function boot() {
+    try {
+      const j = await api('GET');
+      try { sessionStorage.setItem('pw', pw); } catch {}
+      dbWarn = !j.database;
+      data = { agencies: j.agencies || [], updatedAt: j.updatedAt };
+      dirty = false; render();
+    } catch (e) {
+      try { sessionStorage.removeItem('pw'); } catch {}
+      loginView(pw ? (e.status === 401 ? 'Wrong password' : e.message) : '');
+    }
+  }
+
+  const stats = (a) => {
+    const total = a.streamers.reduce((s, x) => s + toInt(x.coins), 0);
+    const active = a.streamers.filter((x) => toInt(x.coins) >= R.activeThreshold).length;
+    const c = { s: a.streamers.length >= R.minStreamers, t: total >= R.minTotal, a: active >= R.minActive };
+    return { n: a.streamers.length, total, active, c, q: c.s && c.t && c.a };
+  };
+
+  function parseLines(text) {
+    return text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
+      const parts = l.split(/[\t;,]|\s{1,}/).filter(Boolean);
+      const coins = toInt(parts.pop());
+      return { id: parts.join(' '), coins };
+    }).filter((s) => s.id);
+  }
+
+  function agencyCard(a, i) {
+    const s = stats(a), isOpen = open.has(i);
+    return `<div class="card" data-i="${i}">
+      <div class="agency-head">
+        <label>Agency name<input data-f="name" value="${esc(a.name)}"></label>
+        <label>Agency ID<input data-f="id" value="${esc(a.id)}"></label>
+        <div class="toolbar"><button data-act="hide">${a.hidden ? 'Show on site' : 'Hide from site'}</button><button class="danger" data-act="del">Delete</button></div>
+      </div>
+      <div class="stats">
+        <span class="stat ${s.c.s ? 'ok' : ''}">Streamers ${s.n} / ${R.minStreamers}</span>
+        <span class="stat ${s.c.t ? 'ok' : ''}">Total ${fmt(s.total)} / ${fmt(R.minTotal)}</span>
+        <span class="stat ${s.c.a ? 'ok' : ''}">9 750+: ${s.active} / ${R.minActive}</span>
+        ${s.q ? '<span class="stat q">Qualified</span>' : ''}${a.hidden ? '<span class="hidden-tag">hidden from public page</span>' : ''}
+      </div>
+      <details ${isOpen ? 'open' : ''} data-act="toggle"><summary>Streamers (${s.n})</summary>
+        <div class="streamers">
+          <span class="h">Streamer ID / name</span><span class="h">Coins earned</span><span></span>
+          ${a.streamers.map((x, j) => `<input data-s="${j}" data-k="id" value="${esc(x.id)}">
+            <input data-s="${j}" data-k="coins" inputmode="numeric" value="${x.coins || ''}" class="${toInt(x.coins) >= R.activeThreshold ? 'hit' : ''}">
+            <button class="x danger" data-rm="${j}" title="Remove">×</button>`).join('')}
+        </div>
+        <div class="row-actions"><button data-act="add">+ Add streamer</button></div>
+        <details style="margin-top:12px"><summary>Paste many streamers</summary>
+          <p class="muted">One per line: <code>streamer_id coins</code> (tab, comma, semicolon or space separated — you can copy two columns straight from a spreadsheet). Existing streamers with the same ID are updated.</p>
+          <textarea data-paste placeholder="12345 15000&#10;67890 8200"></textarea>
+          <div class="row-actions"><button data-act="paste">Add / update from list</button><button data-act="replace">Replace all streamers with list</button></div>
+        </details>
+      </details>
+    </div>`;
+  }
+
+  function render() {
+    const list = data.agencies.map((a, i) => [a, i]).filter(([a]) => !filter || `${a.name} ${a.id}`.toLowerCase().includes(filter));
+    const q = data.agencies.filter((a) => stats(a).q).length;
+    app.innerHTML = `
+      <div class="top"><img src="/img/logo.webp" alt=""><h1>Admin</h1>
+        <a href="/" target="_blank" rel="noopener">Open public page ↗</a><button data-act="logout">Sign out</button></div>
+      ${dbWarn ? '<div class="card warn">No database connected — changes are saved to a local file only. On Vercel, add Upstash Redis under Storage and redeploy.</div>' : ''}
+      <div class="card">
+        <div class="toolbar">
+          <input class="grow" id="flt" placeholder="Filter agencies by name or ID" value="${esc(filter)}">
+          <button class="hot" data-act="new">+ New agency</button>
+          <button data-act="export">Export CSV</button>
+        </div>
+        <p class="muted" style="margin:10px 0 0">${data.agencies.length} agencies · ${q} qualified. Ranking on the site: qualified agencies first, ordered by total coins.</p>
+        <details style="margin-top:10px"><summary>Bulk import from spreadsheet (all agencies)</summary>
+          <p class="muted">Columns: <code>agency_id, agency_name, streamer_id, coins</code> — one row per streamer, header row optional. Agencies in the file get their streamer list replaced; agencies not in the file stay as they are.</p>
+          <textarea id="bulk" placeholder="A-101	Star Agency	55501	12000&#10;A-101	Star Agency	55502	9800"></textarea>
+          <div class="row-actions"><button data-act="bulk">Import</button></div>
+        </details>
+      </div>
+      <div id="list">${list.map(([a, i]) => agencyCard(a, i)).join('') || '<p class="muted">No agencies yet. Click “New agency”.</p>'}</div>
+      <div class="savebar"><span class="${dirty ? 'dirty' : 'muted'}" id="st">${dirty ? '● Unsaved changes' : data.updatedAt ? 'Saved ' + new Date(data.updatedAt).toLocaleString() : 'Nothing saved yet'}</span>
+        <button class="hot" data-act="save" ${dirty && !saving ? '' : 'disabled'}>${saving ? 'Saving…' : 'Save & publish'}</button></div>`;
+    const flt = document.getElementById('flt');
+    flt.oninput = () => { filter = flt.value.trim().toLowerCase(); const pos = flt.selectionStart; render(); const f = document.getElementById('flt'); f.focus(); f.setSelectionRange(pos, pos); };
+  }
+
+  const touch = () => { dirty = true; const st = document.getElementById('st'); if (st) { st.textContent = '● Unsaved changes'; st.className = 'dirty'; } const b = app.querySelector('[data-act="save"]'); if (b) b.disabled = false; };
+
+  app.addEventListener('input', (e) => {
+    const card = e.target.closest('[data-i]'); if (!card) return;
+    const a = data.agencies[+card.dataset.i];
+    if (e.target.dataset.f) a[e.target.dataset.f] = e.target.value;
+    else if (e.target.dataset.s != null) {
+      const s = a.streamers[+e.target.dataset.s];
+      s[e.target.dataset.k] = e.target.dataset.k === 'coins' ? toInt(e.target.value) : e.target.value;
+    } else return;
+    touch();
+  });
+  app.addEventListener('change', (e) => {
+    const card = e.target.closest('[data-i]'); if (!card || (e.target.dataset.s == null && !e.target.dataset.f)) return;
+    const tmp = document.createElement('div'); tmp.innerHTML = agencyCard(data.agencies[+card.dataset.i], +card.dataset.i);
+    card.querySelector('.stats').replaceWith(tmp.querySelector('.stats'));
+    card.querySelector('summary').textContent = tmp.querySelector('summary').textContent;
+    if (e.target.dataset.k === 'coins') e.target.classList.toggle('hit', toInt(e.target.value) >= R.activeThreshold);
+  });
+  app.addEventListener('toggle', (e) => {
+    if (e.target.dataset.act !== 'toggle') return;
+    const i = +e.target.closest('[data-i]').dataset.i; e.target.open ? open.add(i) : open.delete(i);
+  }, true);
+
+  app.addEventListener('click', async (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    const card = b.closest('[data-i]'); const i = card ? +card.dataset.i : -1; const a = data?.agencies[i];
+    const act = b.dataset.act;
+    if (b.dataset.rm != null) { a.streamers.splice(+b.dataset.rm, 1); touch(); return render(); }
+    if (act === 'add') { a.streamers.push({ id: '', coins: 0 }); open.add(i); touch(); render(); const ins = app.querySelectorAll(`[data-i="${i}"] [data-k="id"]`); ins[ins.length - 1]?.focus(); return; }
+    if (act === 'paste' || act === 'replace') {
+      const rows = parseLines(card.querySelector('[data-paste]').value);
+      if (!rows.length) return alert('Nothing to import — use one “streamer_id coins” per line.');
+      if (act === 'replace') a.streamers = rows;
+      else rows.forEach((r) => { const ex = a.streamers.find((s) => s.id === r.id); ex ? (ex.coins = r.coins) : a.streamers.push(r); });
+      open.add(i); touch(); return render();
+    }
+    if (act === 'hide') { a.hidden = !a.hidden; touch(); return render(); }
+    if (act === 'del') { if (confirm(`Delete agency “${a.name || a.id}”?`)) { data.agencies.splice(i, 1); open.clear(); touch(); render(); } return; }
+    if (act === 'new') { data.agencies.unshift({ id: '', name: '', hidden: false, streamers: [] }); open = new Set([0]); filter = ''; touch(); render(); app.querySelector('[data-i="0"] [data-f="name"]').focus(); return; }
+    if (act === 'logout') { try { sessionStorage.removeItem('pw'); } catch {} pw = ''; return loginView(); }
+    if (act === 'export') {
+      const lines = [['agency_id', 'agency_name', 'streamer_id', 'coins']];
+      data.agencies.forEach((ag) => ag.streamers.forEach((s) => lines.push([ag.id, ag.name, s.id, s.coins])));
+      const csv = lines.map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
+      Object.assign(document.createElement('a'), { href: url, download: 'salsa-flash.csv' }).click(); return;
+    }
+    if (act === 'bulk') {
+      const text = document.getElementById('bulk').value.trim(); if (!text) return;
+      const byAgency = new Map(); let bad = 0;
+      text.split(/\r?\n/).forEach((l) => {
+        const c = l.includes('\t') ? l.split('\t') : l.split(/[;,]/);
+        if (c.length < 4) { if (l.trim()) bad++; return; }
+        const [aid, aname, sid, coins] = c.map((x) => x.trim().replace(/^"|"$/g, ''));
+        if (/agency/i.test(aid) && /coin/i.test(coins)) return;
+        if (!byAgency.has(aid)) byAgency.set(aid, { name: aname, streamers: [] });
+        byAgency.get(aid).streamers.push({ id: sid, coins: toInt(coins) });
+      });
+      byAgency.forEach((v, aid) => {
+        const ex = data.agencies.find((x) => x.id === aid);
+        if (ex) { ex.streamers = v.streamers; if (v.name) ex.name = v.name; }
+        else data.agencies.push({ id: aid, name: v.name, hidden: false, streamers: v.streamers });
+      });
+      alert(`Imported ${byAgency.size} agencies${bad ? `, skipped ${bad} lines without 4 columns` : ''}. Press “Save & publish” to make it live.`);
+      touch(); return render();
+    }
+    if (act === 'save') {
+      const missing = data.agencies.find((x) => !x.id.trim() || !x.name.trim());
+      if (missing && !confirm('Some agencies have no name or ID. Save anyway?')) return;
+      saving = true; render();
+      try { const r = await api('PUT', data); data.updatedAt = r.updatedAt; dirty = false; }
+      catch (err) { alert('Save failed: ' + err.message); if (err.status === 401) { saving = false; return loginView('Session expired — sign in again'); } }
+      saving = false; render();
+    }
+  });
+
+  window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+  pw ? boot() : loginView();
+})();
+  </script>
+</body>
+</html>

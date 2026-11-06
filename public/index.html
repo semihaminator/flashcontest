@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Salsa Flash · Флеш-конкурс для агентов</title>
+  <meta name="description" content="Реферальный флеш-конкурс для агентов Salsa: 7–25 ноября, призы до $750 + подарки.">
+  <meta name="theme-color" content="#1a0410">
+  <meta property="og:title" content="Salsa Flash · Флеш-конкурс для агентов">
+  <meta property="og:description" content="7–25 ноября · до $750 + подарки">
+  <meta property="og:image" content="/img/og.jpg">
+  <link rel="icon" href="/img/favicon.webp" type="image/webp">
+  <link rel="apple-touch-icon" href="/img/apple-touch.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@600;800;900&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="/img/logo.webp">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="langs" aria-label="Language">
+    <button data-lang="ru">RU</button><button data-lang="ua">UA</button><button data-lang="en">EN</button>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="streaks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="hero-inner">
+      <p class="kicker"><img src="/img/icon-bolt.webp" alt=""><span data-i="kicker"></span></p>
+      <h1 class="logo"><img src="/img/logo.webp" alt="Salsa Flash" width="1200" height="600"></h1>
+      <p class="headline" data-i="headline"></p>
+      <p class="period" data-i="period"></p>
+
+      <div class="countdown" role="timer" aria-live="off">
+        <p class="cd-label" id="cdLabel"></p>
+        <div class="cd-cells" id="cdCells">
+          <div><b id="cdD">00</b><span data-i="d"></span></div>
+          <div><b id="cdH">00</b><span data-i="h"></span></div>
+          <div><b id="cdM">00</b><span data-i="m"></span></div>
+          <div><b id="cdS">00</b><span data-i="s"></span></div>
+        </div>
+      </div>
+
+      <p class="sub" data-i="sub"></p>
+      <div class="ctas">
+        <a class="btn btn-hot" href="#board" data-i="ctaBoard"></a>
+        <a class="btn btn-ghost" href="#rules" data-i="ctaRules"></a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="prizes" id="prizes">
+      <div class="sec-head">
+        <h2 data-i="prizesTitle"></h2>
+        <p data-i="prizesSub"></p>
+      </div>
+      <div class="pool">
+        <img class="pool-bolt" src="/img/icon-bolt.webp" alt="">
+        <div class="pool-txt"><span data-i="pool"></span><b>$1&#8239;500</b><em data-i="poolGifts"></em></div>
+        <img class="pool-bolt r" src="/img/icon-bolt.webp" alt="">
+      </div>
+      <div class="prize-grid">
+        <article class="prize p2">
+          <span class="place" data-place="2"></span>
+          <img class="cash" src="/img/cash-450.webp" alt="$450" loading="lazy">
+          <div class="items">
+            <figure><img src="/img/prize-certificate.webp" alt="" loading="lazy"><figcaption data-i="certificate"></figcaption></figure>
+            <figure><img src="/img/prize-stickers.webp" alt="" loading="lazy"><figcaption data-i="stickers"></figcaption></figure>
+          </div>
+        </article>
+        <article class="prize p1">
+          <span class="place" data-place="1"></span>
+          <img class="cash" src="/img/cash-750.webp" alt="$750" loading="lazy">
+          <div class="items">
+            <figure><img src="/img/prize-calendar.webp" alt="" loading="lazy"><figcaption data-i="calendar"></figcaption></figure>
+            <figure><img src="/img/prize-stickers.webp" alt="" loading="lazy"><figcaption data-i="stickers"></figcaption></figure>
+          </div>
+        </article>
+        <article class="prize p3">
+          <span class="place" data-place="3"></span>
+          <img class="cash" src="/img/cash-300.webp" alt="$300" loading="lazy">
+          <div class="items">
+            <figure><img src="/img/prize-merch.webp" alt="" loading="lazy"><figcaption data-i="merch"></figcaption></figure>
+            <figure><img src="/img/prize-stickers.webp" alt="" loading="lazy"><figcaption data-i="stickers"></figcaption></figure>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="rules" id="rules">
+      <div class="sec-head">
+        <h2 data-i="rulesTitle"></h2>
+        <p data-i="rulesSub"></p>
+      </div>
+      <ol class="rule-grid">
+        <li><img src="/img/icon-streamers.webp" alt="" loading="lazy"><b class="big">10+</b><p data-i="rule1"></p></li>
+        <li><img src="/img/icon-coins.webp" alt="" loading="lazy"><b class="big" id="ruleTotal">500 000</b><p data-i="rule2"></p></li>
+        <li><img src="/img/icon-growth.webp" alt="" loading="lazy"><b class="big">6+</b><p data-i="rule3"></p></li>
+      </ol>
+      <p class="note"><img src="/img/icon-bolt.webp" alt=""><span data-i="rankingNote"></span></p>
+
+      <ol class="timeline">
+        <li><b data-i="tlStart"></b><span data-i="nov7"></span></li>
+        <li><b data-i="tlEnd"></b><span data-i="nov25"></span></li>
+        <li><b data-i="tlPayout"></b><span data-i="tlPayoutDate"></span></li>
+      </ol>
+    </section>
+
+    <section class="board" id="board">
+      <div class="sec-head">
+        <h2 data-i="boardTitle"></h2>
+        <p class="updated" id="updated"></p>
+      </div>
+      <input class="search" id="search" type="search" autocomplete="off" data-i-ph="search">
+      <div class="table" role="table">
+        <div class="tr th" role="row">
+          <span data-i="colPlace"></span><span data-i="colAgency"></span><span data-i="colStreamers"></span>
+          <span data-i="colTotal"></span><span data-i="colActive"></span><span data-i="colStatus"></span>
+        </div>
+        <div id="rows"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <img src="/img/heart.webp" alt="" loading="lazy"><span data-i="footer"></span>
+  </footer>
+
+  <script src="/i18n.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
