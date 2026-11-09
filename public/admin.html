@@ -38,6 +38,10 @@
     .agency-head .btns { grid-column: 4; grid-row: 1; display: flex; gap: 6px; justify-content: flex-end; }
     .agency-head .btns button { padding: 11px 12px; }
     input.ok { border-color: rgba(125, 255, 182, .55); }
+    .import { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .file-btn { display: inline-flex; align-items: center; cursor: pointer; font: 800 13px/1 var(--body); letter-spacing: 0; text-transform: none; color: #fff; padding: 12px 18px; border-radius: 999px; background: linear-gradient(180deg, #ff6ab8, var(--pink) 55%, #c4006a); box-shadow: 0 6px 22px rgba(255, 31, 142, .45); }
+    .tz { display: flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; font-size: 13px; }
+    .tz select { width: auto; padding: 8px 10px; }
     .hint { color: #ffb3c6; font-size: 12px; font-weight: 700; }
     label { display: grid; gap: 4px; font: 700 11px/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
     .stats { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 10px; }
@@ -160,16 +164,25 @@
           <button class="hot" data-act="new">+ New agency</button>
           <button data-act="export">Export CSV</button>
         </div>
-        <p class="muted" style="margin:10px 0 0">${data.agencies.length} agencies · ${q} qualified. Ranking on the site: qualified agencies first, ordered by total coins. Times are in your time zone.</p>
-        <details style="margin-top:10px"><summary>Bulk import from spreadsheet</summary>
-          <p class="muted">Columns: <code>agency name, streamers, total coins, streamers 9 750+, last invite</code> (last invite optional, e.g. <code>2026-11-09 12:30</code>). One row per agency, header row optional — copy straight from a spreadsheet. Agencies with the same name are updated, new names are added.</p>
-          <textarea id="bulk" placeholder="HADUPIAK	70	500000	12	2026-11-09 12:30"></textarea>
-          <div class="row-actions"><button data-act="bulk">Import</button></div>
-        </details>
-      </div>
+        <p class="muted" style="margin:10px 0 0">${data.agencies.length} agencies · ${q} qualified. Ranking on the site: qualified agencies first, ordered by total coins. Times below are shown in your time zone.</p>
+        <div class="import">
+          <div class="toolbar">
+            <label class="file-btn hot-btn">⬆ Upload leaderboard CSV<input type="file" id="csvFile" accept=".csv,.tsv,.txt,text/csv" hidden></label>
+            <label class="tz">Times in file are
+              <select id="csvTz"><option value="utc">UTC</option><option value="local">my local time</option></select>
+            </label>
+          </div>
+          <p class="muted" style="margin:8px 0 0">Upload the “Agency Invite Program — Top Inviters” export as it is. Only <code>agency_name</code>, <code>invited_streamer_count</code>, <code>invitee_earnings_coins</code> and <code>last_invite_time</code> are used; all other columns are ignored. Agencies are matched by name: existing ones are updated, new ones are added, the “9 750+” number you entered by hand is kept.</p>
+          <details style="margin-top:8px"><summary>…or paste rows</summary>
+            <p class="muted">Paste the same CSV, or rows copied from a spreadsheet with a header row. Without a header the columns are read as <code>name, streamers, total coins, streamers 9 750+, last invite</code>.</p>
+            <textarea id="bulk" placeholder="agency_name,invited_streamer_count,invitee_earnings_coins,last_invite_time&#10;HADUPIAK,77,22413.0,2026-11-09 12:00"></textarea>
+            <div class="row-actions"><button data-act="bulk">Import pasted rows</button></div>
+          </details>
+        </div>
       <div id="list">${list.map(([a, i]) => agencyCard(a, i)).join('') || '<p class="muted">No agencies yet. Click “New agency”.</p>'}</div>
       <div class="savebar"><span class="${dirty ? 'dirty' : 'muted'}" id="st">${dirty ? '● Unsaved changes' : data.updatedAt ? 'Saved ' + new Date(data.updatedAt).toLocaleString() : 'Nothing saved yet'}</span>
         <button class="hot" data-act="save" ${dirty && !saving ? '' : 'disabled'}>${saving ? 'Saving…' : 'Save & publish'}</button></div>`;
+    try { const z = localStorage.getItem('csvTz'); if (z) document.getElementById('csvTz').value = z; } catch {}
     const flt = document.getElementById('flt');
     flt.oninput = () => { filter = flt.value.trim().toLowerCase(); const pos = flt.selectionStart; render(); const f = document.getElementById('flt'); f.focus(); f.setSelectionRange(pos, pos); };
   }
@@ -196,6 +209,73 @@
     return isNaN(d) ? '' : d.toISOString();
   }
 
+
+  // ---------- CSV import ----------
+  function parseCsv(text) {
+    text = text.replace(/^﻿/, '');
+    const first = text.split(/\r?\n/, 1)[0];
+    const delim = first.includes('\t') ? '\t' : (first.split(';').length > first.split(',').length ? ';' : ',');
+    const rows = []; let row = [], cell = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === delim) { row.push(cell); cell = ''; }
+      else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += ch;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.map((r) => r.map((c) => c.trim())).filter((r) => r.some(Boolean));
+  }
+
+  const COLS = {
+    name: ['agency_name', 'agency name', 'name', 'агентство'],
+    streamers: ['invited_streamer_count', 'streamers', 'streamer_count'],
+    total: ['invitee_earnings_coins', 'total_coins', 'total coins', 'total'],
+    active: ['streamers_9750_plus', 'streamers 9750+', 'streamers 9 750+', '9750+', 'active_streamers'],
+    lastInvite: ['last_invite_time', 'last_invite', 'last invite'],
+  };
+
+  function csvDate(v, tz) {
+    v = String(v || '').trim(); if (!v) return '';
+    const m = v.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})/) || null;
+    if (m) {
+      const p = [+m[1], m[2] - 1, +m[3], +m[4], +m[5]];
+      return (tz === 'utc' ? new Date(Date.UTC(...p)) : new Date(...p)).toISOString();
+    }
+    return parseDate(v);
+  }
+
+  function importText(text) {
+    const tz = document.getElementById('csvTz').value;
+    try { localStorage.setItem('csvTz', tz); } catch {}
+    const rows = parseCsv(text || ''); if (!rows.length) return alert('The file is empty.');
+    const head = rows[0].map((h) => h.toLowerCase());
+    const idx = Object.fromEntries(Object.entries(COLS).map(([k, names]) => [k, head.findIndex((h) => names.includes(h))]));
+    let body = rows;
+    if (idx.name >= 0) body = rows.slice(1);
+    else Object.assign(idx, { name: 0, streamers: 1, total: 2, active: 3, lastInvite: 4 }); // no header: old column order
+    if (idx.streamers < 0 || idx.total < 0) return alert('Could not find the columns invited_streamer_count / invitee_earnings_coins in this file.');
+    let added = 0, updated = 0, skipped = 0;
+    body.forEach((c) => {
+      const name = (c[idx.name] || '').trim(); if (!name) { skipped++; return; }
+      const row = { name, streamers: toInt(c[idx.streamers]), total: toInt(c[idx.total]) };
+      if (idx.active >= 0 && c[idx.active] !== undefined && c[idx.active] !== '') row.active = toInt(c[idx.active]);
+      if (idx.lastInvite >= 0) { const li = csvDate(c[idx.lastInvite], tz); if (li) row.lastInvite = li; }
+      const ex = data.agencies.find((x) => x.name.trim().toLowerCase() === name.toLowerCase());
+      if (ex) { Object.assign(ex, row); updated++; }
+      else { data.agencies.push({ hidden: false, active: 0, lastInvite: '', ...row }); added++; }
+    });
+    alert(`Imported ${body.length - skipped} agencies: ${added} new, ${updated} updated${skipped ? `, ${skipped} rows without a name skipped` : ''}.\n\nCheck the numbers, then press “Save & publish” to make it live.`);
+    touch(); render();
+  }
+
+  app.addEventListener('change', async (e) => {
+    if (e.target.id !== 'csvFile' || !e.target.files[0]) return;
+    importText(await e.target.files[0].text());
+    e.target.value = '';
+  });
+
   app.addEventListener('click', async (e) => {
     const b = e.target.closest('button'); if (!b) return;
     const card = b.closest('[data-i]'); const i = card ? +card.dataset.i : -1; const a = data?.agencies[i];
@@ -206,28 +286,13 @@
     if (act === 'new') { data.agencies.unshift({ name: '', hidden: false, streamers: 0, total: 0, active: 0, lastInvite: '' }); filter = ''; touch(); render(); app.querySelector('[data-i="0"] [data-f="name"]').focus(); return; }
     if (act === 'logout') { try { sessionStorage.removeItem('pw'); } catch {} pw = ''; return loginView(); }
     if (act === 'export') {
-      const lines = [['agency_name', 'streamers', 'total_coins', 'streamers_9750_plus', 'last_invite', 'hidden']];
-      data.agencies.forEach((ag) => lines.push([ag.name, ag.streamers, ag.total, ag.active, ag.lastInvite ? toLocalInput(ag.lastInvite).replace('T', ' ') : '', ag.hidden ? 'yes' : '']));
+      const lines = [['agency_name', 'invited_streamer_count', 'invitee_earnings_coins', 'streamers_9750_plus', 'last_invite_time', 'hidden']];
+      data.agencies.forEach((ag) => lines.push([ag.name, ag.streamers, ag.total, ag.active, ag.lastInvite ? (document.getElementById('csvTz').value === 'utc' ? ag.lastInvite.slice(0, 16) : toLocalInput(ag.lastInvite)).replace('T', ' ') : '', ag.hidden ? 'yes' : '']));
       const csv = lines.map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
       const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
       Object.assign(document.createElement('a'), { href: url, download: 'salsa-flash.csv' }).click(); return;
     }
-    if (act === 'bulk') {
-      const text = document.getElementById('bulk').value.trim(); if (!text) return;
-      let added = 0, updated = 0, bad = 0;
-      text.split(/\r?\n/).forEach((l) => {
-        if (!l.trim()) return;
-        const c = (l.includes('\t') ? l.split('\t') : l.split(';').length > 1 ? l.split(';') : l.split(',')).map((x) => x.trim().replace(/^"|"$/g, ''));
-        if (c.length < 4 || !c[0]) { bad++; return; }
-        if (/agency|агент/i.test(c[0]) && !toInt(c[1])) return; // header row
-        const row = { name: c[0], streamers: toInt(c[1]), total: toInt(c[2]), active: toInt(c[3]), lastInvite: parseDate(c[4]) };
-        const ex = data.agencies.find((x) => x.name.trim().toLowerCase() === row.name.toLowerCase());
-        if (ex) { Object.assign(ex, row, { lastInvite: row.lastInvite || ex.lastInvite }); updated++; }
-        else { data.agencies.push({ hidden: false, ...row }); added++; }
-      });
-      alert(`Added ${added}, updated ${updated}${bad ? `, skipped ${bad} lines (need at least 4 columns)` : ''}. Press “Save & publish” to make it live.`);
-      touch(); return render();
-    }
+    if (act === 'bulk') { importText(document.getElementById('bulk').value); return; }
     if (act === 'save') {
       if (data.agencies.some((x) => !x.name.trim()) && !confirm('Agencies without a name will be removed. Save anyway?')) return;
       saving = true; render();
