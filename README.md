@@ -16,12 +16,12 @@ Open `https://<your-project>.vercel.app/admin`, sign in, add agencies, press **S
 
 ## Admin panel
 
-- Each agency has a name, an ID and a list of streamers with the coins each earned. Streamer count, total coins and the number of streamers with 9 750+ are calculated automatically.
-- **Paste many streamers:** copy two columns (streamer ID, coins) from a spreadsheet into an agency.
-- **Bulk import:** paste four columns `agency_id, agency_name, streamer_id, coins` for all agencies at once.
-- **Hide from site** keeps an agency in the admin but removes it from the public page.
-- **Export CSV** downloads everything.
+- Each agency has: **name**, **number of streamers**, **total coins**, **number of streamers with 9 750+ coins**, and **last invite** time (the "Now" button fills in the current time).
+- Totals accept `500000`, `500 000` or `500k`.
+- **Bulk import:** paste rows `agency name, streamers, total coins, streamers 9 750+, last invite` from a spreadsheet. Same name → updated, new name → added.
+- **Hide** keeps an agency in the admin but removes it from the public page. **Export CSV** downloads everything.
 - Nothing goes live until you press **Save & publish**. The public page refreshes every minute (cached up to 30 s).
+- Data saved by the earlier version (streamer lists + agency IDs) is converted automatically.
 
 ## Ranking logic (`api/_lib/store.js`)
 

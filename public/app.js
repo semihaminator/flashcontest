@@ -57,7 +57,7 @@
       ? `${t('updated')}: ${new Date(data.updatedAt).toLocaleString(t('_locale'), { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}` : '';
     const q = $('#search').value.trim().toLowerCase();
     const R = data.rules;
-    const rows = data.rows.filter((r) => !q || r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q));
+    const rows = data.rows.filter((r) => !q || r.name.toLowerCase().includes(q));
     if (!data.rows.length) { box.innerHTML = `<div class="empty"><img src="/img/icon-bolt.webp" alt="">${t('empty')}</div>`; return; }
     if (!rows.length) { box.innerHTML = `<div class="empty">${t('noMatch')}</div>`; return; }
     box.innerHTML = rows.map((r) => {
@@ -67,7 +67,7 @@
         <span class="rank${r.place ? '' : ' none'}">${rank}</span>
         <div class="ag"><span class="rank-m">${rank}</span><div>
           <div class="ag-name">${esc(r.name || '—')}</div>
-          <div class="ag-id">ID ${esc(r.id || '—')}</div>
+          ${r.lastInvite ? `<div class="ag-id">${t('lastInvite')}: ${new Date(r.lastInvite).toLocaleString(t('_locale'), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>` : ''}
           ${top ? `<span class="ag-prize">${PRIZE[r.place]}</span>` : ''}
         </div></div>
         ${metric('m1', t('colStreamers'), r.streamers, R.minStreamers, `${fmt(r.streamers)}<small>/ ${R.minStreamers}</small>`)}

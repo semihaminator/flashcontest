@@ -50,26 +50,40 @@ const int = (v) => {
 };
 const str = (v, max = 80) => String(v ?? '').trim().slice(0, max);
 
+// Older saves stored a list of streamers; convert them to the aggregate numbers.
+function aggregate(a) {
+  if (Array.isArray(a.streamers)) {
+    return {
+      streamers: a.streamers.length,
+      total: a.streamers.reduce((s, x) => s + int(x.coins), 0),
+      active: a.streamers.filter((x) => int(x.coins) >= RULES.activeThreshold).length,
+    };
+  }
+  return { streamers: int(a.streamers), total: int(a.total), active: int(a.active) };
+}
+
+const iso = (v) => { const d = new Date(v || ''); return v && !isNaN(d) ? d.toISOString() : ''; };
+
 export function sanitize(input) {
   const agencies = Array.isArray(input?.agencies) ? input.agencies : [];
   return {
-    agencies: agencies.slice(0, 500).map((a) => ({
-      id: str(a.id, 40),
-      name: str(a.name, 80),
-      hidden: Boolean(a.hidden),
-      streamers: (Array.isArray(a.streamers) ? a.streamers : []).slice(0, 2000).map((s) => ({
-        id: str(s.id, 60),
-        coins: int(s.coins),
-      })).filter((s) => s.id || s.coins),
-    })).filter((a) => a.id || a.name),
+    agencies: agencies.slice(0, 1000).map((a) => {
+      const n = aggregate(a);
+      return {
+        name: str(a.name || a.id, 80),
+        hidden: Boolean(a.hidden),
+        streamers: n.streamers,
+        total: n.total,
+        active: Math.min(n.active, n.streamers),
+        lastInvite: iso(a.lastInvite),
+      };
+    }).filter((a) => a.name),
     updatedAt: new Date().toISOString(),
   };
 }
 
 export function stats(a) {
-  const streamers = a.streamers.length;
-  const total = a.streamers.reduce((s, x) => s + x.coins, 0);
-  const active = a.streamers.filter((x) => x.coins >= RULES.activeThreshold).length;
+  const { streamers, total, active } = aggregate(a);
   const checks = {
     streamers: streamers >= RULES.minStreamers,
     total: total >= RULES.minTotal,
@@ -82,7 +96,7 @@ export function stats(a) {
 export function leaderboard(data) {
   const rows = data.agencies
     .filter((a) => !a.hidden)
-    .map((a) => ({ id: a.id, name: a.name, ...stats(a) }))
+    .map((a) => ({ name: a.name || a.id || '', lastInvite: a.lastInvite || '', ...stats(a) }))
     .sort((x, y) => (y.qualified - x.qualified) || (y.total - x.total) || (y.active - x.active));
   let place = 0;
   for (const r of rows) r.place = r.qualified ? ++place : null;
