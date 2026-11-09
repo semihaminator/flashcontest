@@ -18,7 +18,7 @@ Open `https://<your-project>.vercel.app/admin`, sign in, add agencies, press **S
 
 - Each agency has: **name**, **number of streamers**, **total coins**, **number of streamers with 9 750+ coins**, and **last invite** time (the "Now" button fills in the current time).
 - Totals accept `500000`, `500 000` or `500k`.
-- **Upload leaderboard CSV:** upload the “Agency Invite Program — Top Inviters” export as is. Only `agency_name`, `invited_streamer_count`, `invitee_earnings_coins`, `last_invite_time` are used (plus `streamers_9750_plus` if the file has it). Agencies are matched by name; the hand-entered 9 750+ number is kept. Times in the file are read as UTC by default (switchable to local time).
+- **Upload leaderboard CSV:** upload the “Agency Invite Program — Top Inviters” export as is. Only `agency_name`, `invited_streamer_count`, `invitee_earnings_coins`, `last_invite_time` are used and `invited_streamers_9750_plus_coins`. Agencies are matched by name; if the file has no 9 750+ column, the hand-entered number is kept. Times in the file are read as UTC by default (switchable to local time).
 - **Hide** keeps an agency in the admin but removes it from the public page. **Export CSV** downloads everything.
 - Nothing goes live until you press **Save & publish**. The public page refreshes every minute (cached up to 30 s).
 - Data saved by the earlier version (streamer lists + agency IDs) is converted automatically.

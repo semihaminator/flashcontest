@@ -172,7 +172,7 @@
               <select id="csvTz"><option value="utc">UTC</option><option value="local">my local time</option></select>
             </label>
           </div>
-          <p class="muted" style="margin:8px 0 0">Upload the “Agency Invite Program — Top Inviters” export as it is. Only <code>agency_name</code>, <code>invited_streamer_count</code>, <code>invitee_earnings_coins</code> and <code>last_invite_time</code> are used; all other columns are ignored. Agencies are matched by name: existing ones are updated, new ones are added, the “9 750+” number you entered by hand is kept.</p>
+          <p class="muted" style="margin:8px 0 0">Upload the “Agency Invite Program — Top Inviters” export as it is. Only <code>agency_name</code>, <code>invited_streamer_count</code>, <code>invitee_earnings_coins</code>, <code>invited_streamers_9750_plus_coins</code> and <code>last_invite_time</code> are used; all other columns are ignored. Agencies are matched by name: existing ones are updated, new ones are added. If the file has no 9 750+ column, the number entered by hand is kept.</p>
           <details style="margin-top:8px"><summary>…or paste rows</summary>
             <p class="muted">Paste the same CSV, or rows copied from a spreadsheet with a header row. Without a header the columns are read as <code>name, streamers, total coins, streamers 9 750+, last invite</code>.</p>
             <textarea id="bulk" placeholder="agency_name,invited_streamer_count,invitee_earnings_coins,last_invite_time&#10;HADUPIAK,77,22413.0,2026-11-09 12:00"></textarea>
@@ -232,7 +232,7 @@
     name: ['agency_name', 'agency name', 'name', 'агентство'],
     streamers: ['invited_streamer_count', 'streamers', 'streamer_count'],
     total: ['invitee_earnings_coins', 'total_coins', 'total coins', 'total'],
-    active: ['streamers_9750_plus', 'streamers 9750+', 'streamers 9 750+', '9750+', 'active_streamers'],
+    active: ['invited_streamers_9750_plus_coins', 'streamers_9750_plus', 'streamers 9750+', 'streamers 9 750+', '9750+', 'active_streamers'],
     lastInvite: ['last_invite_time', 'last_invite', 'last invite'],
   };
 
@@ -286,7 +286,7 @@
     if (act === 'new') { data.agencies.unshift({ name: '', hidden: false, streamers: 0, total: 0, active: 0, lastInvite: '' }); filter = ''; touch(); render(); app.querySelector('[data-i="0"] [data-f="name"]').focus(); return; }
     if (act === 'logout') { try { sessionStorage.removeItem('pw'); } catch {} pw = ''; return loginView(); }
     if (act === 'export') {
-      const lines = [['agency_name', 'invited_streamer_count', 'invitee_earnings_coins', 'streamers_9750_plus', 'last_invite_time', 'hidden']];
+      const lines = [['agency_name', 'invited_streamer_count', 'invitee_earnings_coins', 'invited_streamers_9750_plus_coins', 'last_invite_time', 'hidden']];
       data.agencies.forEach((ag) => lines.push([ag.name, ag.streamers, ag.total, ag.active, ag.lastInvite ? (document.getElementById('csvTz').value === 'utc' ? ag.lastInvite.slice(0, 16) : toLocalInput(ag.lastInvite)).replace('T', ' ') : '', ag.hidden ? 'yes' : '']));
       const csv = lines.map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
       const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
